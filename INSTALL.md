@@ -234,12 +234,11 @@ Exceptions: explain fully when asked to explain. Confirm before destructive acti
 <details>
 <summary><strong>Grok (<code>grok</code>)</strong></summary>
 
-Grok's plugin CLI is the same shape as Claude Code and Codex: add the marketplace, install the plugin, then invoke the skill. Two Grok-only steps: `--trust` (hooks and skills stay inactive without it) and `grok plugin enable` (plugins stay off until enabled).
+Grok loads the repository's existing plugin and skill files; no separate Grok manifest is required. Install directly from GitHub, enable the plugin, then invoke the skill. Two Grok-only steps: `--trust` (hooks and skills stay inactive without it) and `grok plugin enable` (plugins stay off until enabled).
 
 ### Install
 
 ```bash
-grok plugin marketplace add ayghri/i-have-adhd
 grok plugin install ayghri/i-have-adhd --trust
 grok plugin enable i-have-adhd
 ```
@@ -250,7 +249,7 @@ Start a new Grok session and type `/i-have-adhd`. Grok honors `disable-model-inv
 
 ```bash
 grok plugin list
-grok inspect
+grok plugin details i-have-adhd
 ```
 
 Confirm `i-have-adhd` is listed, enabled, and shows a skill plus hooks.
@@ -265,7 +264,6 @@ grok plugin update i-have-adhd
 
 ```bash
 grok plugin uninstall i-have-adhd --confirm
-grok plugin marketplace remove i-have-adhd
 ```
 
 Or keep it installed and turn it off: `grok plugin disable i-have-adhd`.
