@@ -93,6 +93,6 @@ Lấy cảm hứng một phần từ cuốn *The Adult ADHD Tool Kit* của J. R
 
 ## Giấy phép
 
-MIT.
+[MIT](../../LICENSE).
 
 Hãy ⭐ repo nếu nó giúp bạn khỏi phải cuộn qua thêm một câu “Câu hỏi rất hay!”

@@ -93,6 +93,6 @@ Baseado livremente em *The Adult ADHD Tool Kit*, de J. Russell Ramsay e Anthony 
 
 ## Licença
 
-MIT.
+[MIT](../../LICENSE).
 
 Dê uma ⭐ se isso te poupou de rolar a tela por mais um "Ótima pergunta!"

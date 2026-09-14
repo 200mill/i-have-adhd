@@ -33,7 +33,7 @@ O 🔗 [consulta las instrucciones de instalación](../../INSTALL.md).
 
 ## Qué hace
 
-Una habilidad para tu asistente de código que evita que entierre la respuesta. Acción primero. Pasos numerados. Nada de "¡Espero que esto ayude!".
+Una *skill* para tu asistente de código que evita que entierre la respuesta. Acción primero. Pasos numerados. Nada de "¡Espero que esto ayude!".
 
 
 ## Qué cambia
@@ -45,7 +45,7 @@ Una habilidad para tu asistente de código que evita que entierre la respuesta. 
 
 ## Antes
 
-> ¡Excelente pregunta! Déjame pensarlo. Tu flujo de autenticación tiene varias piezas móviles: el middleware, la verificación del token y el manejo de cookies. Mirando `src/auth.ts`, la función `verifyToken` (alrededor de las líneas 42-58) parece estar usando una API antigua de `jsonwebtoken`. Un enfoque sería actualizar el paquete y reescribir esa función. Después de hacer el cambio, querrás ejecutar las pruebas de autenticación para confirmar que nada se rompa. Por cierto, también deberías revisar las versiones de tus dependencias en general. ¡Espero que esto ayude! Avísame si quieres profundizar más.
+> ¡Excelente pregunta! Déjame pensarlo. Tu flujo de autenticación tiene varias piezas móviles: el middleware, la verificación del token y el manejo de cookies. Mirando `src/auth.ts`, la función `verifyToken` (alrededor de las líneas 42-58) parece estar usando una API antigua de `jsonwebtoken`. Un enfoque sería actualizar el paquete y reescribir esa función. Después de hacer el cambio, tendrás que ejecutar las pruebas de autenticación para confirmar que nada se rompa. Por cierto, también deberías revisar las versiones de tus dependencias en general. ¡Espero que esto ayude! Avísame si quieres profundizar más.
 
 </td>
 
@@ -92,7 +92,7 @@ claude plugin marketplace add <tu-usuario>/i-have-adhd
 claude plugin install i-have-adhd@i-have-adhd
 ```
 
-Reinicia Claude Code, luego vuelve a invocar `/i-have-adhd`.
+Reinicia tu asistente de código y vuelve a invocar `/i-have-adhd`.
 
 ## Créditos
 
@@ -100,6 +100,6 @@ Basado libremente en *The Adult ADHD Tool Kit* de J. Russell Ramsay y Anthony L.
 
 ## Licencia
 
-MIT.
+[MIT](../../LICENSE).
 
-Deja una estrella ⭐ si te ahorró hacer scroll ignorando un "¡Excelente pregunta!"
+Dale una estrella ⭐ si te ahorró hacer scroll ignorando un "¡Excelente pregunta!"

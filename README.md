@@ -92,7 +92,7 @@ claude plugin marketplace add <your-username>/i-have-adhd
 claude plugin install i-have-adhd@i-have-adhd
 ```
 
-Restart Claude Code, then re-invoke `/i-have-adhd`.
+Restart your coding assistant, then re-invoke `/i-have-adhd`.
 
 ## Credits
 
@@ -100,6 +100,6 @@ Loosely based on *The Adult ADHD Tool Kit* by J. Russell Ramsay and Anthony L. R
 
 ## License
 
-MIT.
+[MIT](LICENSE).
 
 Star ⭐ if it saved you one scroll past one "Great question!"
