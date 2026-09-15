@@ -8,36 +8,27 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/ayghri/i-have-adhd?style=flat" alt="License"></a>
 </p>
 
+<p align="center">
+  <strong title="English" aria-label="English">🇬🇧</strong> ·
+  <a href=".github/readme/README.zh-CN.md" title="简体中文" aria-label="简体中文">🇨🇳</a> ·
+  <a href=".github/readme/README.pt-BR.md" title="Português (Brasil)" aria-label="Português (Brasil)">🇧🇷</a> ·
+  <a href=".github/readme/README.ja.md" title="日本語" aria-label="日本語">🇯🇵</a> ·
+  <a href=".github/readme/README.vi.md" title="Tiếng Việt" aria-label="Tiếng Việt">🇻🇳</a> ·
+  <a href=".github/readme/README.ko.md" title="한국어" aria-label="한국어">🇰🇷</a> ·
+  <a href=".github/readme/README.fa.md" title="فارسی" aria-label="فارسی">🇮🇷</a> ·
+  <a href=".github/readme/README.th.md" title="ภาษาไทย" aria-label="ภาษาไทย">🇹🇭</a>
+</p>
+
 
 ## Install
 
-<details>
-<summary><strong>Claude Code</strong></summary>
+Copy/paste into your CLI prompt:
 
-```bash
-claude plugin marketplace add ayghri/i-have-adhd
-claude plugin install i-have-adhd@i-have-adhd
+```text
+Install the i-have-adhd skill/plugin from https://github.com/ayghri/i-have-adhd, refer to the repo's AGENTS.md for instructions.
 ```
 
-Then type `/i-have-adhd`. No local clone needed: Claude Code fetches the repo and keeps it updated.
-
-Want it on every session? `touch ~/.claude/.i-have-adhd-always` (see [INSTALL.md](./INSTALL.md)).
-
-</details>
-
-<details>
-<summary><strong>Codex</strong></summary>
-
-```bash
-codex plugin marketplace add ayghri/i-have-adhd --ref main
-codex plugin add i-have-adhd@i-have-adhd
-```
-
-Then type `$i-have-adhd` to apply the output style explicitly. The skill can also be invoked implicitly when Codex sees a task that benefits from it.
-
-</details>
-
-Install instructions for other coding agents live in [INSTALL.md](./INSTALL.md).
+Or 🔗 [check the installation instructions](INSTALL.md).
 
 ## What it does
 
@@ -86,7 +77,7 @@ A skill for your coding assistant that stops it from burying the answer. Action 
 6. Specific time estimates (minutes, not "a bit").
 7. Make wins visible.
 8. Matter-of-fact errors.
-9. Cap lists at 5 items.
+9. Cap lists to 5 items.
 10. No preamble. No recap. No closers.
 
 ## Tune it
