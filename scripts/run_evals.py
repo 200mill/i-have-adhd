@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """Validate, run, and score paired response-quality evaluations."""
 
-from __future__ import annotations
-
 import argparse
+from contextlib import contextmanager
 import json
 import shlex
 import subprocess
 import sys
+import tempfile
 import time
 from collections import Counter, defaultdict
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,6 +25,23 @@ WEIGHTS = {
     "concision": 0.10,
 }
 CONDITIONS = {"baseline", "candidate", "comparator"}
+
+
+@contextmanager
+def _neutral_cwd() -> Iterator[str]:
+    """Yield an empty scratch directory for one runner invocation.
+
+    Agent CLIs adopt their working directory as project context: run one inside
+    this checkout and it answers prompts by inspecting the harness instead of
+    the task. That contamination is not symmetric across conditions -- a
+    response style that discourages exploration wanders less -- so it shows up
+    as a score difference that has nothing to do with the skill under test.
+    Isolation is the same reason the runners pass `--setting-sources ""`; the
+    working directory is simply another channel the operator's world leaks in
+    through.
+    """
+    with tempfile.TemporaryDirectory(prefix="eval-neutral-cwd-") as cwd:
+        yield cwd
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -98,12 +116,16 @@ def _describe_rows(keys: list[tuple[str, Any]]) -> str:
     return ", ".join(f"{case_id}/trial {trial}" for case_id, trial in keys)
 
 
-def _coverage_errors(coverage: dict[str, Counter[tuple[str, Any]]]) -> list[str]:
-    errors: list[str] = []
+def _check_pairing(grouped: dict[str, list[dict[str, Any]]]) -> None:
+    """Conditions are only comparable when judged on identical rows."""
+    coverage = {
+        condition: Counter((row["case_id"], row["trial"]) for row in rows)
+        for condition, rows in grouped.items()
+    }
     for condition, counts in sorted(coverage.items()):
         repeated = sorted(key for key, count in counts.items() if count > 1)
         if repeated:
-            errors.append(
+            raise ValueError(
                 f"{condition}: duplicate score rows for {_describe_rows(repeated)}"
             )
     baseline = coverage["baseline"]
@@ -117,22 +139,10 @@ def _coverage_errors(coverage: dict[str, Counter[tuple[str, Any]]]) -> list[str]
         unmatched = sorted(set(counts) - set(baseline))
         if unmatched:
             details.append(f"unmatched {_describe_rows(unmatched)}")
-        errors.append(
+        raise ValueError(
             f"{condition} was not judged on the same rows as baseline: "
             + "; ".join(details)
         )
-    return errors
-
-
-def _check_pairing(grouped: dict[str, list[dict[str, Any]]]) -> None:
-    """Conditions are only comparable when judged on identical rows."""
-    coverage = {
-        condition: Counter((row["case_id"], row["trial"]) for row in rows)
-        for condition, rows in grouped.items()
-    }
-    errors = _coverage_errors(coverage)
-    if errors:
-        raise ValueError(errors[0])
 
 
 def summarize_scores(scores: list[dict[str, Any]]) -> dict[str, Any]:
@@ -272,12 +282,28 @@ def _percent_change(
     return delta / baseline * 100
 
 
-def _condition_prompt(task: str, condition: str, skill_path: Path | None) -> str:
+def _strip_frontmatter(text: str) -> str:
+    """Drop a leading YAML frontmatter block, mirroring hooks/always-on.sh.
+
+    The hook injects the ruleset without frontmatter, so the eval has to grade
+    the same text. A file that opens a block but never closes it is left alone
+    rather than emptied.
+    """
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return text
+    for index in range(1, len(lines)):
+        if lines[index].strip() == "---":
+            return "\n".join(lines[index + 1 :]).lstrip("\n")
+    return text
+
+
+def _condition_prompt(task: str, condition: str, skill_path: Optional[Path]) -> str:
     if condition == "baseline":
         return task
     if skill_path is None:
         raise ValueError(f"--condition-skill is required for the {condition} condition")
-    instructions = skill_path.read_text(encoding="utf-8")
+    instructions = _strip_frontmatter(skill_path.read_text(encoding="utf-8"))
     return (
         "Follow the response-style skill below while completing the task. "
         "Do not discuss or quote the skill.\n\n"
@@ -286,11 +312,13 @@ def _condition_prompt(task: str, condition: str, skill_path: Path | None) -> str
     )
 
 
-def _parse_response(output: str, response_format: str) -> tuple[str, dict[str, Any], float | None]:
+def _parse_response(
+    output: str, response_format: str
+) -> tuple[str, dict[str, Any], Optional[float]]:
     if response_format == "text":
         return output.strip(), {}, None
     if response_format == "claude-json":
-        payload = json.loads(output)
+        payload, _ = json.JSONDecoder().raw_decode(output.lstrip())
         return (
             str(payload.get("result", "")).strip(),
             payload.get("usage", {}) or {},
@@ -375,13 +403,15 @@ def run_evaluations(args: argparse.Namespace) -> int:
                 invocation.append(prompt)
                 completed = None
                 for attempt in range(args.retries + 1):
-                    completed = subprocess.run(
-                        invocation,
-                        check=False,
-                        capture_output=True,
-                        text=True,
-                        cwd=ROOT,
-                    )
+                    with _neutral_cwd() as cwd:
+                        completed = subprocess.run(
+                            invocation,
+                            check=False,
+                            capture_output=True,
+                            text=True,
+                            cwd=cwd,
+                            stdin=subprocess.DEVNULL,
+                        )
                     if completed.returncode == 0:
                         break
                     if attempt < args.retries:
@@ -458,7 +488,7 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: Optional[list[str]] = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
     if hasattr(args, "handler"):

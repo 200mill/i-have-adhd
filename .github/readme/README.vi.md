@@ -1,52 +1,28 @@
 <p align="center">
-    <a href="https://github.com/ayghri/i-have-adhd"> <img src="/logo.png" alt="i-have-adhd" width="140" /></a>
+  <img src="../../logo.png" alt="i-have-adhd" width="140" />
 </p>
 <p align="center">
   <strong align="center">Đầu ra thân thiện với người có ADHD. Không cần chẩn đoán ADHD!</strong>
 </p>
 <p align="center">
-  <a href="/LICENSE"><img src="https://img.shields.io/github/license/ayghri/i-have-adhd?style=flat" alt="Giấy phép"></a>
+  <a href="../../LICENSE"><img src="https://img.shields.io/github/license/ayghri/i-have-adhd?style=flat" alt="Giấy phép"></a>
 </p>
 
 <p align="center">
-  <a href="/README.md">English</a> ·
-  <a href="README.zh-CN.md">简体</a> ·
-  <a href="README.ja.md">日本語</a> ·
-  <a href="README.ko.md">한국어</a> ·
-  <strong>Tiếng Việt</strong> ·
-  <a href="README.pt-BR.md">Português (BR)</a>
+  <a href="../../README.md" title="English" aria-label="English">🇬🇧</a> ·
+  <a href="README.zh-CN.md" title="简体中文" aria-label="简体中文">🇨🇳</a> ·
+  <a href="README.pt-BR.md" title="Português (Brasil)" aria-label="Português (Brasil)">🇧🇷</a> ·
+  <a href="README.ja.md" title="日本語" aria-label="日本語">🇯🇵</a> ·
+  <strong title="Tiếng Việt" aria-label="Tiếng Việt">🇻🇳</strong> ·
+  <a href="README.ko.md" title="한국어" aria-label="한국어">🇰🇷</a> ·
+  <a href="README.fa.md" title="فارسی" aria-label="فارسی">🇮🇷</a> ·
+  <a href="README.th.md" title="ภาษาไทย" aria-label="ภาษาไทย">🇹🇭</a>
 </p>
 
 
 ## Cài đặt
 
-<details>
-<summary><strong>Claude Code</strong></summary>
-
-```bash
-claude plugin marketplace add ayghri/i-have-adhd
-claude plugin install i-have-adhd@i-have-adhd
-```
-
-Sau đó gõ `/i-have-adhd`. Không cần clone về máy: Claude Code sẽ tự tải repo và cập nhật.
-
-Bạn muốn tự động bật trong mọi phiên làm việc? Chạy `touch ~/.claude/.i-have-adhd-always` (xem [INSTALL.md](/INSTALL.md)).
-
-</details>
-
-<details>
-<summary><strong>Codex</strong></summary>
-
-```bash
-codex plugin marketplace add ayghri/i-have-adhd --ref main
-codex plugin add i-have-adhd@i-have-adhd
-```
-
-Sau đó, gõ `$i-have-adhd` để chủ động áp dụng phong cách đầu ra này. Skill cũng có thể được Codex tự động gọi khi nhận thấy tác vụ phù hợp.
-
-</details>
-
-Hướng dẫn cài đặt cho các trợ lý lập trình khác có tại [INSTALL.md](/INSTALL.md).
+🔗 [Hướng dẫn cài đặt](../install/INSTALL.vi.md)
 
 ## Skill này làm gì
 
@@ -85,7 +61,7 @@ Một skill dành cho trợ lý lập trình, giúp câu trả lời đi thẳng
 
 ## Các quy tắc
 
-10 quy tắc. Nội dung chi tiết tại [SKILL.md](/skills/i-have-adhd/SKILL.md).
+10 quy tắc. Nội dung chi tiết tại [SKILL.md](../../skills/i-have-adhd/SKILL.md).
 
 1. Bắt đầu ngay bằng hành động tiếp theo.
 2. Đánh số các công việc gồm nhiều bước.
@@ -117,6 +93,6 @@ Lấy cảm hứng một phần từ cuốn *The Adult ADHD Tool Kit* của J. R
 
 ## Giấy phép
 
-MIT.
+[MIT](../../LICENSE).
 
 Hãy ⭐ repo nếu nó giúp bạn khỏi phải cuộn qua thêm một câu “Câu hỏi rất hay!”

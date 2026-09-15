@@ -1,56 +1,38 @@
 <p align="center">
-    <a href="https://github.com/ayghri/i-have-adhd"> <img src="/logo.png" alt="i-have-adhd" width="140" /></a>
+  <img src="../../logo.png" alt="i-have-adhd" width="140" />
 </p>
 <p align="center">
   <strong align="center">对 ADHD 友好的输出。无需确诊 ADHD！</strong>
 </p>
 <p align="center">
-  <a href="/LICENSE"><img src="https://img.shields.io/github/license/ayghri/i-have-adhd?style=flat" alt="许可证"></a>
+  <a href="../../LICENSE"><img src="https://img.shields.io/github/license/ayghri/i-have-adhd?style=flat" alt="许可证"></a>
 </p>
 
 <p align="center">
-  <a href="/README.md">English</a> ·
-  <strong>简体中文</strong> ·
-  <a href="README.ja.md">日本語</a> ·
-  <a href="README.ko.md">한국어</a> ·
-  <a href="README.vi.md">Tiếng Việt</a> ·
-  <a href="README.pt-BR.md">Português (BR)</a>
+  <a href="../../README.md" title="English" aria-label="English">🇬🇧</a> ·
+  <strong title="简体中文" aria-label="简体中文">🇨🇳</strong> ·
+  <a href="README.pt-BR.md" title="Português (Brasil)" aria-label="Português (Brasil)">🇧🇷</a> ·
+  <a href="README.ja.md" title="日本語" aria-label="日本語">🇯🇵</a> ·
+  <a href="README.vi.md" title="Tiếng Việt" aria-label="Tiếng Việt">🇻🇳</a> ·
+  <a href="README.ko.md" title="한국어" aria-label="한국어">🇰🇷</a> ·
+  <a href="README.fa.md" title="فارسی" aria-label="فارسی">🇮🇷</a> ·
+  <a href="README.th.md" title="ภาษาไทย" aria-label="ภาษาไทย">🇹🇭</a>
 </p>
 
 
 ## 安装
 
-<details>
-<summary><strong>Claude Code</strong></summary>
+复制粘贴到你的 CLI 对话框中：
 
-```bash
-claude plugin marketplace add ayghri/i-have-adhd
-claude plugin install i-have-adhd@i-have-adhd
+```text
+Install the i-have-adhd skill/plugin from https://github.com/ayghri/i-have-adhd, refer to the repo's AGENTS.md for instructions.
 ```
 
-然后输入 `/i-have-adhd`。无需在本地克隆：Claude Code 会获取该仓库并保持更新。
-
-想在每次会话中都启用它？运行 `touch ~/.claude/.i-have-adhd-always`（参见 [INSTALL.md](/INSTALL.md)）。
-
-</details>
-
-<details>
-<summary><strong>Codex</strong></summary>
-
-```bash
-codex plugin marketplace add ayghri/i-have-adhd --ref main
-codex plugin add i-have-adhd@i-have-adhd
-```
-
-然后输入 `$i-have-adhd`，显式应用这种输出风格。当 Codex 发现某项任务适合使用此技能时，也可以隐式调用它。
-
-</details>
-
-其他编程智能体的安装说明位于 [INSTALL.md](/INSTALL.md)。
+或 🔗 [查看安装说明](../install/INSTALL.zh-CN.md)
 
 ## 功能
 
-这是一个面向编程助手的技能，阻止它把答案藏在冗长文字中。行动优先。步骤编号。不说“希望这能帮到你！”
+一个给编程助手用的技能，让它别把答案埋进长篇大论。行动优先。步骤编号。不说“希望这能帮到你！”
 
 
 ## 有什么变化
@@ -85,16 +67,16 @@ codex plugin add i-have-adhd@i-have-adhd
 
 ## 规则
 
-共 10 条规则。完整内容见 [SKILL.md](/skills/i-have-adhd/SKILL.md)。
+共 10 条规则。完整内容见 [SKILL.md](../../skills/i-have-adhd/SKILL.md)。
 
 1. 先说下一步行动。
 2. 多步骤任务使用编号。
-3. 以一个具体的下一步结束。
-4. 避免离题。
-5. 每轮都重述当前状态。
-6. 给出明确的时间估计（用分钟，不说“一会儿”）。
-7. 让成果清晰可见。
-8. 客观陈述错误。
+3. 以一个具体的下一步收尾。
+4. 抑制离题内容。
+5. 每轮重述当前状态。
+6. 给出具体的时间估计（以分钟计，不说“一会儿”）。
+7. 让完成的工作看得见。
+8. 就事论事地报告错误。
 9. 每个列表最多 5 项。
 10. 不写开场白、回顾或结束语。
 
@@ -117,6 +99,6 @@ claude plugin install i-have-adhd@i-have-adhd
 
 ## 许可证
 
-MIT。
+[MIT](../../LICENSE)。
 
-如果它让你少滚动一次屏幕、跳过一句“问得好！”，请点亮 Star ⭐
+如果它帮你省下一次滚动、少看一句“问得好！”，请点个 Star ⭐

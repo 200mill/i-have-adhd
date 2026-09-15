@@ -1,52 +1,28 @@
 <p align="center">
-    <a href="https://github.com/ayghri/i-have-adhd"> <img src="/logo.png" alt="i-have-adhd" width="140" /></a>
+  <img src="../../logo.png" alt="i-have-adhd" width="140" />
 </p>
 <p align="center">
   <strong align="center">Respostas amigáveis para quem tem TDAH. Sem precisar de diagnóstico!</strong>
 </p>
 <p align="center">
-  <a href="/LICENSE"><img src="https://img.shields.io/github/license/ayghri/i-have-adhd?style=flat" alt="Licença"></a>
+  <a href="../../LICENSE"><img src="https://img.shields.io/github/license/ayghri/i-have-adhd?style=flat" alt="Licença"></a>
 </p>
 
 <p align="center">
-  <a href="/README.md">English</a> ·
-  <a href="README.zh-CN.md">简体中文</a> ·
-  <a href="README.ja.md">日本語</a> ·
-  <a href="README.ko.md">한국어</a> ·
-  <a href="README.vi.md">Tiếng Việt</a> ·
-  <strong>Português (BR)</strong>
+  <a href="../../README.md" title="English" aria-label="English">🇬🇧</a> ·
+  <a href="README.zh-CN.md" title="简体中文" aria-label="简体中文">🇨🇳</a> ·
+  <strong title="Português (Brasil)" aria-label="Português (Brasil)">🇧🇷</strong> ·
+  <a href="README.ja.md" title="日本語" aria-label="日本語">🇯🇵</a> ·
+  <a href="README.vi.md" title="Tiếng Việt" aria-label="Tiếng Việt">🇻🇳</a> ·
+  <a href="README.ko.md" title="한국어" aria-label="한국어">🇰🇷</a> ·
+  <a href="README.fa.md" title="فارسی" aria-label="فارسی">🇮🇷</a> ·
+  <a href="README.th.md" title="ภาษาไทย" aria-label="ภาษาไทย">🇹🇭</a>
 </p>
 
 
 ## Instalação
 
-<details>
-<summary><strong>Claude Code</strong></summary>
-
-```bash
-claude plugin marketplace add ayghri/i-have-adhd
-claude plugin install i-have-adhd@i-have-adhd
-```
-
-Depois digite `/i-have-adhd`. Não precisa clonar nada localmente: o Claude Code baixa o repositório e o mantém atualizado.
-
-Quer ativar em toda sessão? `touch ~/.claude/.i-have-adhd-always` (veja o [INSTALL.md](/INSTALL.md)).
-
-</details>
-
-<details>
-<summary><strong>Codex</strong></summary>
-
-```bash
-codex plugin marketplace add ayghri/i-have-adhd --ref main
-codex plugin add i-have-adhd@i-have-adhd
-```
-
-Depois digite `$i-have-adhd` para aplicar o estilo de resposta explicitamente. A skill também pode ser invocada implicitamente quando o Codex identifica uma tarefa que se beneficia dela.
-
-</details>
-
-As instruções de instalação para outros assistentes de código estão no [INSTALL.md](/INSTALL.md).
+🔗 [Instruções de instalação](../install/INSTALL.pt-BR.md)
 
 ## O que ela faz
 
@@ -85,7 +61,7 @@ Uma skill para o seu assistente de código que impede que ele enterre a resposta
 
 ## As regras
 
-10 regras. Texto completo no [SKILL.md](/skills/i-have-adhd/SKILL.md).
+10 regras. Texto completo no [SKILL.md](../../skills/i-have-adhd/SKILL.md).
 
 1. Comece pela próxima ação.
 2. Numere tarefas de múltiplos passos.
@@ -117,6 +93,6 @@ Baseado livremente em *The Adult ADHD Tool Kit*, de J. Russell Ramsay e Anthony 
 
 ## Licença
 
-MIT.
+[MIT](../../LICENSE).
 
 Dê uma ⭐ se isso te poupou de rolar a tela por mais um "Ótima pergunta!"
