@@ -93,6 +93,6 @@ J. Russell Ramsay와 Anthony L. Rostain의 *The Adult ADHD Tool Kit*을 느슨�
 
 ## 라이선스
 
-MIT.
+[MIT](../../LICENSE).
 
 "좋은 질문이네요!" 없는 답변을 한 번이라도 받았다면 Star ⭐ 부탁드립니다.

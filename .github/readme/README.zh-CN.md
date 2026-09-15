@@ -99,6 +99,6 @@ claude plugin install i-have-adhd@i-have-adhd
 
 ## 许可证
 
-MIT。
+[MIT](../../LICENSE)。
 
 如果它帮你省下一次滚动、少看一句“问得好！”，请点个 Star ⭐

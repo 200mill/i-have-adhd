@@ -95,6 +95,6 @@ J. Russell Ramsay と Anthony L. Rostain による著書『*The Adult ADHD Tool 
 
 ## ライセンス
 
-MIT
+[MIT](../../LICENSE)
 
 もし1回でも「良い質問ですね！」を読み飛ばすスクロールが減ったなら、Star⭐️をお願いします。
