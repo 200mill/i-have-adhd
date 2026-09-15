@@ -4,6 +4,7 @@
 import argparse
 from contextlib import contextmanager
 import json
+import math
 import shlex
 import subprocess
 import sys
@@ -188,7 +189,24 @@ def summarize_scores(scores: list[dict[str, Any]]) -> dict[str, Any]:
 
 def summarize_usage(rows: list[dict[str, Any]]) -> dict[str, Any]:
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for row in rows:
+    for index, row in enumerate(rows, start=1):
+        for field in ("case_id", "runner", "condition"):
+            if not isinstance(row.get(field), str) or not row[field]:
+                raise ValueError(f"Response {index}: {field} must be a non-empty string")
+        if row["condition"] not in CONDITIONS:
+            raise ValueError(f"Response {index}: unsupported condition")
+        if type(row.get("trial")) is not int or row["trial"] < 1:
+            raise ValueError(f"Response {index}: trial must be a positive integer")
+        if not isinstance(row.get("response"), str):
+            raise ValueError(f"Response {index}: response must be a string")
+        cost = row.get("cost_usd")
+        if cost is not None and (
+            type(cost) not in (int, float) or cost < 0 or not math.isfinite(cost)
+        ):
+            raise ValueError(f"Response {index}: cost_usd must be finite and non-negative")
+        model = row.get("model")
+        if model is not None and (not isinstance(model, str) or not model.strip()):
+            raise ValueError(f"Response {index}: model must be a non-empty string")
         grouped[row["condition"]].append(row)
     if "baseline" not in grouped or "candidate" not in grouped:
         raise ValueError("Responses must include baseline and candidate conditions")
@@ -197,6 +215,9 @@ def summarize_usage(rows: list[dict[str, Any]]) -> dict[str, Any]:
     if len(runners) > 1:
         names = ", ".join(sorted(str(runner) for runner in runners))
         raise ValueError(f"Responses must use the same runner; found: {names}")
+    models = {row.get("model") for row in rows}
+    if len(models) > 1:
+        raise ValueError("Responses must report the same model on every row, or omit it on all rows")
     _check_pairing(grouped)
 
     conditions: dict[str, dict[str, Any]] = {}
@@ -208,14 +229,14 @@ def summarize_usage(rows: list[dict[str, Any]]) -> dict[str, Any]:
         output_total = _reported_token_total(output_counts)
         response_chars = sum(len(row["response"]) for row in condition_rows)
         reported_costs = [row.get("cost_usd") for row in condition_rows]
-        unreported_costs = sum(
-            not isinstance(cost, (int, float)) for cost in reported_costs
-        )
+        unreported_costs = sum(cost is None for cost in reported_costs)
         cost_total = (
             None
             if unreported_costs
             else sum(float(cost) for cost in reported_costs)
         )
+        if cost_total is not None and not math.isfinite(cost_total):
+            raise ValueError(f"{condition}: cost total is not finite")
         summary = {
             "rows": len(condition_rows),
             "input_tokens": input_total,
@@ -239,25 +260,18 @@ def summarize_usage(rows: list[dict[str, Any]]) -> dict[str, Any]:
     for condition, summary in sorted(conditions.items()):
         if condition == "baseline":
             continue
-        output_delta = _difference(summary["output_tokens"], baseline["output_tokens"])
-        cost_delta = _difference(summary["cost_usd"], baseline["cost_usd"])
-        response_chars_delta = _difference(
-            summary["mean_response_chars"], baseline["mean_response_chars"]
-        )
-        deltas[condition] = {
-            "output_tokens": output_delta,
-            "output_tokens_pct": _percent_change(
-                output_delta, baseline["output_tokens"]
-            ),
-            "cost_usd": cost_delta,
-            "cost_usd_pct": _percent_change(cost_delta, baseline["cost_usd"]),
-            "mean_response_chars": response_chars_delta,
-            "mean_response_chars_pct": _percent_change(
-                response_chars_delta, baseline["mean_response_chars"]
-            ),
-        }
+        deltas[condition] = {}
+        for metric in ("input_tokens", "output_tokens", "cost_usd", "mean_response_chars"):
+            delta = _difference(summary[metric], baseline[metric])
+            deltas[condition][metric] = delta
+            deltas[condition][f"{metric}_pct"] = _percent_change(delta, baseline[metric])
 
-    return {"runner": next(iter(runners)), "conditions": conditions, "delta": deltas}
+    return {
+        "runner": next(iter(runners)),
+        "model": next(iter(models)),
+        "conditions": conditions,
+        "delta": deltas,
+    }
 
 
 def _reported_token_total(values: list[int | None]) -> int | None:
@@ -345,12 +359,21 @@ _INPUT_TOKEN_KEYS = (
 )
 
 
-def _usage_tokens(usage: dict[str, Any]) -> tuple[int | None, int | None]:
+def _usage_tokens(usage: Optional[dict[str, Any]]) -> tuple[int | None, int | None]:
     """Return (input, output) token counts, or None where they were not reported."""
-    input_values = [usage[key] for key in _INPUT_TOKEN_KEYS if key in usage]
-    input_tokens = sum(input_values) if input_values else None
-    output_tokens = usage["output_tokens"] if "output_tokens" in usage else None
-    return input_tokens, output_tokens
+    if usage is None:
+        return None, None
+    if not isinstance(usage, dict):
+        raise ValueError("usage must be an object or null")
+    for key in (*_INPUT_TOKEN_KEYS, "cached_input_tokens", "output_tokens"):
+        value = usage.get(key)
+        if value is not None and (type(value) is not int or value < 0):
+            raise ValueError(f"{key} must be a non-negative integer or null")
+    # Claude cache counts are additional input; Codex cached_input_tokens is a subset.
+    input_values = [usage.get("input_tokens")] + [
+        usage.get(key, 0) for key in _INPUT_TOKEN_KEYS[1:]
+    ]
+    return _reported_token_total(input_values), usage.get("output_tokens")
 
 
 def run_evaluations(args: argparse.Namespace) -> int:
@@ -518,7 +541,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(json.dumps(summarize_scores(read_jsonl(args.scores)), indent=2))
         return 0
     if args.command == "measure":
-        print(json.dumps(summarize_usage(read_jsonl(args.responses)), indent=2))
+        print(json.dumps(summarize_usage(read_jsonl(args.responses)), indent=2, allow_nan=False))
         return 0
     parser.error("unknown command")
     return 2

@@ -46,7 +46,26 @@ Aggregate token usage, reported cost, and response length from the completed res
 python3 scripts/run_evals.py measure evals/results/responses.jsonl
 ```
 
-The command refuses to compare conditions produced by different runners or conditions with unequal `(case_id, trial)` coverage. This is the same comparability rule the release gate applies to judged scores.
+The summary reports input/output token totals, reported generation cost, stored
+response length, and candidate-minus-baseline deltas. Positive deltas mean more
+usage or cost; negative deltas mean less. Read these alongside quality scores.
+
+Comparisons require the same runner and identical `(case_id, trial)` coverage,
+without duplicates. If rows include `model`, every row must name the same model.
+Older runner output does not record model metadata: `model: null` means model
+comparability is unverified. Check the original model/CLI settings yourself;
+a matching runner alias alone does not establish the same model or configuration.
+
+Missing costs or token counts produce `null` totals and deltas, not zero. Invalid
+negative, boolean, non-finite, or fractional token counts are rejected. A zero
+baseline has no meaningful percentage change, so that percentage is `null`.
+Claude input totals include cache creation/read tokens; Codex cached input is
+already part of its input count and is not added again.
+
+This measures recorded generation rows, not total provider billing: judge costs
+and unrecorded failed/retried calls are excluded. Scenario captures currently omit
+token usage, and their response length includes transcript JSON and user prompts.
+The command is read-only and makes no model calls.
 
 ## Judge and score
 
