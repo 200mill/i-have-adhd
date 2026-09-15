@@ -38,6 +38,35 @@ Isolation also drops the operator's saved model and effort settings, so the clau
 
 Runs are resumable: rerun the same command after a provider failure and completed `(case, trial, condition, runner)` rows are skipped. Each incomplete call is retried twice by default, and the final provider error is preserved.
 
+## Measure
+
+Aggregate token usage, reported cost, and response length from the completed responses file:
+
+```bash
+python3 scripts/run_evals.py measure evals/results/responses.jsonl
+```
+
+The summary reports input/output token totals, reported generation cost, stored
+response length, and candidate-minus-baseline deltas. Positive deltas mean more
+usage or cost; negative deltas mean less. Read these alongside quality scores.
+
+Comparisons require the same runner and identical `(case_id, trial)` coverage,
+without duplicates. If rows include `model`, every row must name the same model.
+Older runner output does not record model metadata: `model: null` means model
+comparability is unverified. Check the original model/CLI settings yourself;
+a matching runner alias alone does not establish the same model or configuration.
+
+Missing costs or token counts produce `null` totals and deltas, not zero. Invalid
+negative, boolean, non-finite, or fractional token counts are rejected. A zero
+baseline has no meaningful percentage change, so that percentage is `null`.
+Claude input totals include cache creation/read tokens; Codex cached input is
+already part of its input count and is not added again.
+
+This measures recorded generation rows, not total provider billing: judge costs
+and unrecorded failed/retried calls are excluded. Scenario captures currently omit
+token usage, and their response length includes transcript JSON and user prompts.
+The command is read-only and makes no model calls.
+
 ## Judge and score
 
 `scripts/judge.py` grades the responses and writes the score rows for you:
@@ -81,4 +110,4 @@ Either way, apply the release gate:
 python3 scripts/run_evals.py score evals/results/scores.jsonl
 ```
 
-Record the exact CLI and model versions with published results. Do not compare conditions produced with different cases, models, trial counts, or rubrics.
+Record the exact CLI and model versions with published results, including measured token and cost numbers. Do not compare conditions produced with different cases, models, trial counts, or rubrics.
