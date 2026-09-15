@@ -131,6 +131,110 @@ class ScenarioEvaluationTest(unittest.TestCase):
         self.assertNotIn("--session-id", command)
         self.assertNotIn("--resume", command)
 
+    def test_children_cannot_read_parent_input(self):
+        probe = "import sys; print(repr(sys.stdin.read()))"
+        wrapper = (
+            "import sys; sys.path.insert(0, sys.argv[1]); "
+            "import run_scenario_eval as runner; "
+            "print(runner.run_claude_command([sys.executable, '-c', sys.argv[2]], "
+            "workdir=runner.pathlib.Path.cwd(), label='probe'))"
+        )
+        # The fake CLI includes its stdin in otherwise valid provider output.
+        cli = (
+            "import json, sys; print(json.dumps({"
+            "'result': sys.stdin.read(), 'total_cost_usd': 0}))"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", wrapper, str(ROOT / "scripts"), cli],
+            input="unrelated piped input",
+            text=True,
+            capture_output=True,
+            timeout=5,
+            check=True,
+        )
+        self.assertIn("'result': ''", result.stdout)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "checks.py").write_text(probe, encoding="utf-8")
+            result = run_scenario_eval.run_checks(root, root / "unused", root)
+        self.assertEqual("''", result.stdout.strip())
+
+    def test_children_time_out(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "checks.py").write_text(
+                "import time; time.sleep(5)", encoding="utf-8"
+            )
+            with mock.patch.object(run_scenario_eval, "CHECK_TIMEOUT_SECONDS", 0.1):
+                with self.assertRaisesRegex(RuntimeError, "checks timed out"):
+                    run_scenario_eval.run_checks(root, root / "unused", root)
+            with mock.patch.object(run_scenario_eval, "CALL_TIMEOUT_SECONDS", 0.1):
+                with self.assertRaisesRegex(
+                    run_scenario_eval.ClaudeCallError, "timed out; call cost unavailable"
+                ):
+                    run_scenario_eval.run_claude_command(
+                        [sys.executable, str(root / "checks.py")],
+                        workdir=root,
+                        label="probe",
+                    )
+
+    @mock.patch("run_scenario_eval.subprocess.run")
+    def test_invalid_costs_fail_closed(self, subprocess_run):
+        for cost in (True, False, float("nan"), float("inf"), -1, None, "0.1"):
+            with self.subTest(cost=cost):
+                subprocess_run.return_value = subprocess.CompletedProcess(
+                    [], 0, json.dumps({"result": "done", "total_cost_usd": cost}), ""
+                )
+                with self.assertRaisesRegex(
+                    run_scenario_eval.ClaudeCallError, "invalid total_cost_usd"
+                ):
+                    run_scenario_eval.run_claude_command([], workdir=ROOT, label="probe")
+
+    @mock.patch("run_scenario_eval.subprocess.run")
+    def test_malformed_failure_payload_does_not_crash(self, subprocess_run):
+        for payload in ([], None, "error"):
+            with self.subTest(payload=payload):
+                subprocess_run.return_value = subprocess.CompletedProcess(
+                    [], 1, json.dumps(payload), "failed"
+                )
+                with self.assertRaisesRegex(
+                    run_scenario_eval.ClaudeCallError, "call cost unavailable"
+                ):
+                    run_scenario_eval.run_claude_command([], workdir=ROOT, label="probe")
+
+    @mock.patch("run_scenario_eval.subprocess.run")
+    def test_provider_error_is_not_a_successful_response(self, subprocess_run):
+        subprocess_run.return_value = subprocess.CompletedProcess(
+            [], 0, json.dumps({
+                "is_error": True, "result": "budget exhausted", "total_cost_usd": 0.12
+            }), ""
+        )
+        with self.assertRaises(run_scenario_eval.ClaudeCallError) as caught:
+            run_scenario_eval.run_claude_command([], workdir=ROOT, label="probe")
+        self.assertEqual(0.12, caught.exception.cost_usd)
+
+    @mock.patch("run_scenario_eval.subprocess.run")
+    def test_invalid_judge_result_preserves_cost(self, subprocess_run):
+        subprocess_run.return_value = subprocess.CompletedProcess(
+            [], 0, json.dumps({
+                "structured_output": {
+                    "pass": True,
+                    "results": [{"id": "C1", "pass": "yes", "evidence": "claim"}],
+                },
+                "total_cost_usd": 0.12,
+            }), ""
+        )
+        with self.assertRaisesRegex(RuntimeError, r"cumulative reported cost: \$0.220000"):
+            run_scenario_eval.invoke_with_cost(
+                run_scenario_eval.call_judge,
+                "judge",
+                prior_cost=0.1,
+                remaining_budget=0.9,
+                model="fixture",
+                workdir=ROOT,
+            )
+
     def test_runner_uses_one_session_and_blind_judge(self):
         calls = []
         judge_calls = []

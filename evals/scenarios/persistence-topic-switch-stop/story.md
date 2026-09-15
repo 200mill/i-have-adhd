@@ -4,6 +4,27 @@ The response style is supplied once at the beginning of a real session. Later
 turns are sent through the provider's resume mechanism without reinjecting the
 skill.
 
+This tests observable responses and the stop acknowledgment, not internal mode
+state or behavior after stopping. It does not exercise plugin loading, hooks,
+compaction, or other runtimes. Existing Pi smoke tests cover native enable/disable
+state; a passing stub test is not evidence that a model follows the rules.
+
+Validate offline with:
+
+```sh
+python3 scripts/run_scenario_eval.py validate evals/scenarios/persistence-topic-switch-stop
+```
+
+A live run requires Claude Code with `--safe-mode` support, an explicit `--model`,
+`--budget-usd` (at most $25 including the judge), and a new `--output` JSONL path.
+Run baseline and candidate separately with the same model and budget; candidate
+also requires `--condition-skill skills/i-have-adhd/SKILL.md`. Record the CLI/model
+versions, one trial per invocation, this rubric, transcripts, and both results.
+Safe mode disables user plugins and hooks; managed policies can still apply.
+Each generation/judge call has a 120-second timeout; local checks have 10 seconds.
+A timeout or malformed response can leave additional provider spend unreported.
+Only run scenario `checks.py` files you trust: they execute local Python code.
+
 ## Turns
 
 ```json

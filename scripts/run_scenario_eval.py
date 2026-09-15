@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 """Run a multi-turn persistence scenario against Claude Code."""
 
-from __future__ import annotations
-
 import argparse
+import collections.abc
 import json
+import math
+import pathlib
 import re
 import subprocess
 import sys
 import tempfile
+import typing
 import uuid
-from pathlib import Path
-from typing import Any, Callable
 
+
+CALL_TIMEOUT_SECONDS = 120
+CHECK_TIMEOUT_SECONDS = 10
 
 TURN_BLOCK = re.compile(r"## Turns\s*```json\s*(.*?)```", re.DOTALL)
 CRITERIA_BLOCK = re.compile(r"## Pass criteria\s*(.*)\Z", re.DOTALL)
@@ -60,29 +63,40 @@ def budget_value(remaining: float) -> str:
     return f"{microdollars / 1_000_000:.6f}"
 
 
+def valid_cost(cost: object) -> bool:
+    return (
+        isinstance(cost, (int, float))
+        and not isinstance(cost, bool)
+        and math.isfinite(cost)
+        and cost >= 0
+    )
+
+
 def claude_error(
     result: subprocess.CompletedProcess[str],
     label: str,
 ) -> ClaudeCallError:
     cost = 0.0
+    cost_detail = "call cost unavailable"
     detail = result.stderr.strip() or result.stdout.strip()
     try:
         payload = json.loads(result.stdout)
-        reported_cost = payload.get("total_cost_usd")
-        if isinstance(reported_cost, (int, float)) and reported_cost >= 0:
+        reported_cost = payload.get("total_cost_usd") if isinstance(payload, dict) else None
+        if valid_cost(reported_cost):
             cost = float(reported_cost)
-        if isinstance(payload.get("result"), str):
+            cost_detail = f"reported call cost: ${cost:.6f}"
+        if isinstance(payload, dict) and isinstance(payload.get("result"), str):
             detail = payload["result"]
     except json.JSONDecodeError:
         pass
     return ClaudeCallError(
         f"{label} failed with exit code {result.returncode}: {detail} "
-        f"(reported call cost: ${cost:.6f})",
+        f"({cost_detail})",
         cost,
     )
 
 
-def load_scenario(scenario: Path) -> tuple[list[dict[str, str]], list[str]]:
+def load_scenario(scenario: pathlib.Path) -> tuple[list[dict[str, str]], list[str]]:
     story = (scenario / "story.md").read_text(encoding="utf-8")
     turns_match = TURN_BLOCK.search(story)
     if not turns_match:
@@ -121,7 +135,7 @@ def load_scenario(scenario: Path) -> tuple[list[dict[str, str]], list[str]]:
     return turns, criteria
 
 
-def validate_scenario(scenario: Path) -> list[str]:
+def validate_scenario(scenario: pathlib.Path) -> list[str]:
     errors: list[str] = []
     for filename in ("story.md", "checks.py"):
         if not (scenario / filename).is_file():
@@ -143,21 +157,22 @@ def validate_scenario(scenario: Path) -> list[str]:
 
 
 def run_checks(
-    scenario: Path,
-    transcript: Path,
-    workdir: Path,
+    scenario: pathlib.Path,
+    transcript: pathlib.Path,
+    workdir: pathlib.Path,
 ) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [
-            sys.executable,
-            str(scenario / "checks.py"),
-            str(transcript.resolve()),
-        ],
-        cwd=workdir,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    try:
+        return subprocess.run(
+            [sys.executable, str(scenario / "checks.py"), str(transcript.resolve())],
+            cwd=workdir,
+            stdin=subprocess.DEVNULL,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=CHECK_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError("scenario checks timed out") from exc
 
 
 def claude_command(model: str) -> list[str]:
@@ -178,32 +193,48 @@ def claude_command(model: str) -> list[str]:
 def run_claude_command(
     command: list[str],
     *,
-    workdir: Path,
+    workdir: pathlib.Path,
     label: str,
-) -> tuple[dict[str, Any], float]:
-    result = subprocess.run(
-        command,
-        cwd=workdir,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+) -> tuple[dict[str, typing.Any], float]:
+    try:
+        result = subprocess.run(
+            command,
+            cwd=workdir,
+            stdin=subprocess.DEVNULL,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=CALL_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise ClaudeCallError(f"{label} timed out; call cost unavailable", 0.0) from exc
     if result.returncode:
         raise claude_error(result, label)
-    payload = json.loads(result.stdout)
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise ClaudeCallError(
+            f"{label} returned invalid JSON; call cost unavailable", 0.0
+        ) from exc
     cost = payload.get("total_cost_usd") if isinstance(payload, dict) else None
-    if not isinstance(cost, (int, float)) or cost < 0:
-        raise RuntimeError(f"{label} returned invalid total_cost_usd")
+    if not valid_cost(cost):
+        raise ClaudeCallError(
+            f"{label} returned invalid total_cost_usd; call cost unavailable", 0.0
+        )
+    if payload.get("is_error") or str(payload.get("subtype", "")).startswith("error"):
+        raise ClaudeCallError(
+            f"{label} reported an error: {payload.get('result', '')}", float(cost)
+        )
     return payload, float(cost)
 
 
 def invoke_with_cost(
-    call: Callable[..., Any],
+    call: collections.abc.Callable[..., typing.Any],
     prompt: str,
     *,
     prior_cost: float,
-    **options: Any,
-) -> Any:
+    **options: typing.Any,
+) -> typing.Any:
     try:
         return call(prompt, **options)
     except ClaudeCallError as exc:
@@ -220,7 +251,7 @@ def call_claude(
     resume: bool,
     remaining_budget: float,
     model: str,
-    workdir: Path,
+    workdir: pathlib.Path,
 ) -> tuple[str, float]:
     command = claude_command(model)
     command.extend(["--resume" if resume else "--session-id", session_id])
@@ -250,8 +281,8 @@ def call_judge(
     *,
     remaining_budget: float,
     model: str,
-    workdir: Path,
-) -> tuple[dict[str, Any], float]:
+    workdir: pathlib.Path,
+) -> tuple[dict[str, typing.Any], float]:
     command = claude_command(model)
     command.extend(
         [
@@ -275,6 +306,13 @@ def call_judge(
         not isinstance(verdict, dict)
         or not isinstance(verdict.get("pass"), bool)
         or not isinstance(verdict.get("results"), list)
+        or any(
+            not isinstance(item, dict)
+            or not isinstance(item.get("id"), str)
+            or not isinstance(item.get("pass"), bool)
+            or not isinstance(item.get("evidence"), str)
+            for item in verdict.get("results", [])
+        )
     ):
         raise ClaudeCallError(
             "semantic judge returned invalid structured output "
@@ -284,8 +322,8 @@ def call_judge(
     return verdict, cost
 
 
-ModelCall = Callable[..., tuple[str, float]]
-JudgeCall = Callable[..., tuple[dict[str, Any], float]]
+ModelCall = collections.abc.Callable[..., tuple[str, float]]
+JudgeCall = collections.abc.Callable[..., tuple[dict[str, typing.Any], float]]
 
 
 def run_scenario(
@@ -317,13 +355,13 @@ def run_scenario(
     total_cost = 0.0
     judge_transcript: list[dict[str, str]] = []
     semantic_passed: bool | None = None
-    semantic_results: list[dict[str, Any]] = []
+    semantic_results: list[dict[str, typing.Any]] = []
 
     with (
         tempfile.TemporaryDirectory(prefix="scenario-eval-") as temporary,
         transcript.open("x", encoding="utf-8") as destination,
     ):
-        workdir = Path(temporary)
+        workdir = pathlib.Path(temporary)
         for index, turn in enumerate(turns):
             remaining = args.budget_usd - total_cost
             if remaining <= 0:
@@ -385,7 +423,7 @@ def run_scenario(
                     prior_cost=total_cost,
                     remaining_budget=remaining,
                     model=args.model,
-                    workdir=Path(judge_dir),
+                    workdir=pathlib.Path(judge_dir),
                 )
             total_cost += cost
             if total_cost > args.budget_usd:
@@ -402,6 +440,7 @@ def run_scenario(
 
     summary = {
         "scenario": scenario.name,
+        "model": args.model,
         "condition": args.condition,
         "structural_checks_passed": checks.returncode == 0,
         "semantic_passed": semantic_passed,
@@ -421,25 +460,28 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     validate = subparsers.add_parser("validate", help="validate a scenario")
-    validate.add_argument("scenario", type=Path, help="scenario directory")
+    validate.add_argument("scenario", type=pathlib.Path, help="scenario directory")
 
     run = subparsers.add_parser("run", help="run the scenario with Claude Code")
-    run.add_argument("--scenario", type=Path, required=True, help="scenario directory")
+    run.add_argument("--scenario", type=pathlib.Path, required=True, help="scenario directory")
     run.add_argument(
         "--condition",
         choices=("baseline", "candidate"),
         required=True,
         help="run with or without the skill",
     )
-    run.add_argument("--condition-skill", type=Path, help="SKILL.md for candidate")
-    run.add_argument("--model", default="claude-opus-4-8", help="Claude model")
+    run.add_argument("--condition-skill", type=pathlib.Path, help="SKILL.md for candidate")
+    run.add_argument(
+        "--model", required=True,
+        help="Claude model ID (record the CLI version separately)",
+    )
     run.add_argument(
         "--budget-usd",
         type=float,
         required=True,
         help="shared Claude CLI spend limit",
     )
-    run.add_argument("--output", type=Path, required=True, help="JSONL transcript")
+    run.add_argument("--output", type=pathlib.Path, required=True, help="JSONL transcript")
     return parser
 
 
