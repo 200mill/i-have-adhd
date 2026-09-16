@@ -35,7 +35,7 @@ Or 🔗 [check the installation instructions](INSTALL.md).
 
 A skill for your coding assistant that stops it from burying the answer. Action first. Steps numbered. No "Hope this helps!"
 
-
+[Kacper Rutkiewicz | AI Made Simple](https://youtu.be/NEl8kPWZP_Y) has made a good breakdown of an earlier version of the skill.
 ## What changes
 
 
